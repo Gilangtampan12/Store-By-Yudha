@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Web Store</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f9f9fb;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    }
+
+    h2, h3 {
+      text-align: center;
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+
+    button {
+      background-color: #007bff;
+      color: white;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    .product {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 15px;
+      margin: 10px 0;
+      background: #f4f4f4;
+      border-radius: 8px;
+    }
+
+    .product img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 5px;
+    }
+
+    .product-details {
+      flex: 1;
+    }
+
+    .history {
+      background: #eef2f8;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="auth-area">
+    <h2>Login / Daftar</h2>
+    <input type="text" id="username" placeholder="Username" />
+    <input type="password" id="password" placeholder="Password" />
+    <button onclick="register()">Daftar</button>
+    <button onclick="login()">Login</button>
+  </div>
+
+  <div class="container" id="user-area" style="display: none;">
+    <h3>Selamat datang, <span id="user-name"></span></h3>
+    <p>Saldo: Rp <span id="user-balance">0</span></p>
+
+    <h4>Deposit Saldo</h4>
+    <input type="number" id="deposit-amount" placeholder="Jumlah deposit" />
+    <img src="qris.jpg" alt="QRIS DANA" style="width: 100%; max-width: 250px; display: block; margin: auto;" />
+    <button onclick="sendProofToWA()">Saya sudah transfer & kirim bukti ke WA</button>
+
+    <h4>Produk</h4>
+    <div id="product-list"></div>
+
+    <div class="history">
+      <h4>Riwayat Pembelian</h4>
+      <ul id="purchase-history"></ul>
+    </div>
+  </div>
+
+  <div class="container" id="admin-panel" style="display: none;">
+    <h3>Panel Admin</h3>
+    <select id="user-select"></select>
+    <input type="number" id="add-saldo" placeholder="Jumlah saldo" />
+    <button onclick="tambahSaldoUser()">Tambah Saldo</button>
+  </div>
+
+  <script>
+    const WA_NUMBER = '6288973461209';
+
+    const products = [
+      { id: 1, name: 'Script Bot Wa', desc: 'Deskripsi Script Bot Wa', price: 10000, image: 'Midoriya.jpg' },
+      { id: 2, name: 'Jasa Rename Sc', desc: 'Deskripsi Jasa Rename Sc', price: 20000, image: 'Midoriya.jpg' },
+      { id: 3, name: 'Jasa Pembuatan Web', desc: 'Deskripsi Jasa Pembuatan Web', price: '10000', image: 'web.png'}
+    ];
+
+    if (!localStorage.getItem('users')) {
+      const defaultUsers = [
+        { username: 'admin', password: 'admin123', role: 'admin', balance: 0 }
+      ];
+      localStorage.setItem('users', JSON.stringify(defaultUsers));
+    }
+
+    function register() {
+      const uname = document.getElementById('username').value;
+      const pass = document.getElementById('password').value;
+      const users = JSON.parse(localStorage.getItem('users'));
+
+      if (users.find(u => u.username === uname)) return alert('Username sudah terdaftar.');
+
+      users.push({ username: uname, password: pass, role: 'user', balance: 0 });
+      localStorage.setItem('users', JSON.stringify(users));
+      alert('Akun berhasil dibuat. Silakan login.');
+    }
+
+    function login() {
+      const uname = document.getElementById('username').value;
+      const pass = document.getElementById('password').value;
+      const users = JSON.parse(localStorage.getItem('users'));
+      const user = users.find(u => u.username === uname && u.password === pass);
+
+      if (!user) return alert('Username atau password salah.');
+
+      localStorage.setItem('currentUser', uname);
+      user.role === 'admin' ? showAdminPanel() : showUserPanel(user);
+    }
+
+    function showUserPanel(user) {
+      document.getElementById('auth-area').style.display = 'none';
+      document.getElementById('user-area').style.display = 'block';
+      document.getElementById('user-name').innerText = user.username;
+      updateUserBalance(user.username);
+      renderProducts(user);
+      showPurchaseHistory(user.username);
+    }
+
+    function updateUserBalance(username) {
+      const users = JSON.parse(localStorage.getItem('users'));
+      const user = users.find(u => u.username === username);
+      if (user) {
+        document.getElementById('user-balance').innerText = user.balance;
+      }
+    }
+
+    function showAdminPanel() {
+      document.getElementById('auth-area').style.display = 'none';
+      document.getElementById('admin-panel').style.display = 'block';
+      const users = JSON.parse(localStorage.getItem('users'));
+      const select = document.getElementById('user-select');
+      select.innerHTML = '';
+      users.filter(u => u.role === 'user').forEach(u => {
+        const opt = document.createElement('option');
+        opt.value = u.username;
+        opt.textContent = u.username;
+        select.appendChild(opt);
+      });
+    }
+
+    function tambahSaldoUser() {
+      const uname = document.getElementById('user-select').value;
+      const amount = parseInt(document.getElementById('add-saldo').value);
+      const users = JSON.parse(localStorage.getItem('users'));
+      const user = users.find(u => u.username === uname);
+
+      if (!user) return alert('User tidak ditemukan.');
+
+      user.balance += amount;
+      localStorage.setItem('users', JSON.stringify(users));
+      alert(`Saldo Rp ${amount} ditambahkan ke ${uname}`);
+    }
+
+    function sendProofToWA() {
+      const amount = parseInt(document.getElementById('deposit-amount').value);
+      const uname = localStorage.getItem('currentUser');
+      if (!amount || amount <= 0) return alert('Jumlah deposit tidak valid.');
+      const msg = `Halo Admin, saya (${uname}) sudah transfer Rp ${amount} via QRIS. Berikut bukti transfernya.`;
+      const link = `https://wa.me/${WA_NUMBER.replace(/^0/, '62')}?text=${encodeURIComponent(msg)}`;
+      window.open(link, '_blank');
+    }
+
+    function renderProducts(user) {
+      const list = document.getElementById('product-list');
+      list.innerHTML = '';
+      products.forEach(prod => {
+        const item = document.createElement('div');
+        item.className = 'product';
+        item.innerHTML = `
+          <img src="${prod.image}" alt="${prod.name}" />
+          <div class="product-details">
+            <h4>${prod.name}</h4>
+            <p>${prod.desc}</p>
+            <p>Harga: Rp ${prod.price}</p>
+            <button onclick="beliProduk(${prod.id})">Bayar</button>
+          </div>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    function beliProduk(id) {
+      const uname = localStorage.getItem('currentUser');
+      const users = JSON.parse(localStorage.getItem('users'));
+      const user = users.find(u => u.username === uname);
+      const product = products.find(p => p.id === id);
+
+      if (user.balance < product.price) return alert('Saldo tidak cukup.');
+
+      user.balance -= product.price;
+      localStorage.setItem('users', JSON.stringify(users));
+      updateUserBalance(uname);
+      alert(`Pembelian ${product.name} berhasil! Sisa saldo Anda: Rp ${user.balance}`);
+
+      const msg = `Halo Admin, saya (${uname}) sudah membayar Rp ${product.price} untuk membeli produk: ${product.name}`;
+      const link = `https://wa.me/${WA_NUMBER.replace(/^0/, '62')}?text=${encodeURIComponent(msg)}`;
+      window.open(link, '_blank');
+
+      const riwayat = JSON.parse(localStorage.getItem('history-' + uname) || '[]');
+      riwayat.push(`Beli ${product.name} - Rp ${product.price}`);
+      localStorage.setItem('history-' + uname, JSON.stringify(riwayat));
+      showPurchaseHistory(uname);
+    }
+
+    function showPurchaseHistory(uname) {
+      const riwayat = JSON.parse(localStorage.getItem('history-' + uname) || '[]');
+      const ul = document.getElementById('purchase-history');
+      ul.innerHTML = '';
+      riwayat.forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = item;
+        ul.appendChild(li);
+      });
+    }
+  </script>
+</body>
+</html>
