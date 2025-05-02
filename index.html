@@ -92,6 +92,9 @@
     <input type="number" id="deposit-amount" placeholder="Jumlah deposit" />
     <img src="qris.jpg" alt="QRIS DANA" style="width: 100%; max-width: 250px; display: block; margin: auto;" />
     <button onclick="sendProofToWA()">Saya sudah transfer & kirim bukti ke WA</button>
+    
+    <input type="text" id="search-input" placeholder="Cari produk..." oninput="searchProducts()" />
+<div id="product-list"></div>
 
     <h4>Produk</h4>
     <div id="product-list"></div>
@@ -126,7 +129,7 @@
       { id: 11, name: 'Jasa Isi Pulsa', desc: 'Deskripsi Jasa Isi Pulsa', price: '410000', image: 'pulsa.png'},
       { id: 12, name: 'Jasa Isi Pulsa', desc: 'Deskripsi Jasa Isi Pulsa', price: '46000', image: 'pulsa.png'},
       { id: 13, name: 'Jasa Isi Pulsa', desc: 'Deskripsi Jasa Isi Pulsa', price: '51000', image: 'pulsa.png'},
-       { id: 14, name: 'Voucher Unipin', desc: 'Bisa Topup FF, ML, dan lain lain lewat Web UniPin', price: '11000', image: 'unipin.png'},
+      { id: 14, name: 'Voucher Unipin', desc: 'Bisa Topup FF, ML, dan lain lain lewat Web UniPin', price: '11000', image: 'unipin.png'},
       { id: 15, name: 'Voucher Unipin', desc: 'Bisa Topup FF, ML, dan lain lain lewat Web UniPin', price: '21000', image: 'unipin.png'},
       { id: 16, name: 'Voucher Unipin', desc: 'Bisa Topup FF, ML, dan lain lain lewat Web UniPin', price: '50000', image: 'unipin.png'},
       { id: 17, name: 'Voucher Unipin', desc: 'Bisa Topup FF, ML, dan lain lain lewat Web UniPin', price: '98000', image: 'unipin.png'},
@@ -235,6 +238,30 @@
         list.appendChild(item);
       });
     }
+    
+    function searchProducts() {
+  const keyword = document.getElementById('search-input').value.toLowerCase();
+  const user = JSON.parse(localStorage.getItem('users')).find(u => u.username === localStorage.getItem('currentUser'));
+  const list = document.getElementById('product-list');
+  list.innerHTML = '';
+  
+  products
+    .filter(prod => prod.name.toLowerCase().includes(keyword) || prod.desc.toLowerCase().includes(keyword))
+    .forEach(prod => {
+      const item = document.createElement('div');
+      item.className = 'product';
+      item.innerHTML = `
+        <img src="${prod.image}" alt="${prod.name}" />
+        <div class="product-details">
+          <h4>${prod.name}</h4>
+          <p>${prod.desc}</p>
+          <p>Harga: Rp ${prod.price}</p>
+          <button onclick="beliProduk(${prod.id})">Beli</button>
+        </div>
+      `;
+      list.appendChild(item);
+    });
+}
 
     function beliProduk(id) {
       const uname = localStorage.getItem('currentUser');
@@ -249,7 +276,7 @@
       updateUserBalance(uname);
       alert(`Pembelian ${product.name} berhasil! Sisa saldo Anda: Rp ${user.balance}`);
 
-      const msg = `Halo Admin, saya (${uname}) sudah membayar Rp ${product.price} untuk membeli produk: ${product.name}`;
+      const msg = `Halo Admin, saya (${uname}) sudah membayar Rp ${product.price} untuk membeli produk: ${product.name} Harga: ${product.price}`;
       const link = `https://wa.me/${WA_NUMBER.replace(/^0/, '62')}?text=${encodeURIComponent(msg)}`;
       window.open(link, '_blank');
 
