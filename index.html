@@ -152,7 +152,7 @@
   </div>
 </div>
 
-    <h4>Deposit Saldo</h4>
+    <h4>Deposit Saldo (Eror)</h4>
     <input type="number" id="deposit-amount" placeholder="Jumlah deposit" />
     <img src="qris.jpg" alt="QRIS DANA" style="width: 100%; max-width: 250px; display: block; margin: auto;" />
     <button onclick="sendProofToWA()">Saya sudah transfer & kirim bukti ke WA</button>
@@ -344,15 +344,7 @@
       const users = JSON.parse(localStorage.getItem('users'));
       const user = users.find(u => u.username === uname);
       const product = products.find(p => p.id === id);
-
-      if (user.balance < product.price) return alert('Saldo tidak cukup.');
-
-      user.balance -= product.price;
-      localStorage.setItem('users', JSON.stringify(users));
-      updateUserBalance(uname);
-      alert(`Pembelian ${product.name} berhasil! Sisa saldo Anda: Rp ${user.balance}`);
-
-      const msg = `Halo Admin, saya (${uname}) sudah membayar Rp ${product.price} untuk membeli produk: ${product.name} Harga: ${product.price}`;
+     const msg = `Halo Admin, saya (${uname}) ingin membayar Rp ${product.price} untuk membeli produk: ${product.name} Harga: ${product.price}`;
       const link = `https://wa.me/${WA_NUMBER.replace(/^0/, '62')}?text=${encodeURIComponent(msg)}`;
       window.open(link, '_blank');
 
